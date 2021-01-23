@@ -173,6 +173,28 @@ namespace Prints
                 case "Receipts":
                     LoadReceipts();
                     break;
+
+                case "Tag Printing":
+                    try
+                    {
+                        dgvInvoices.Visible = true;
+                        dgvInvoices.Dock = DockStyle.Fill;
+                        dgvGst.Visible = false;
+                        dtpDate.Visible = true;
+                        cboMonth.Visible = false;
+
+                        chkFullyear.Visible = false;
+                        EnableNavigation(true);
+
+                        string fileExt = string.Format("{0:000}", SelectedCompany.Code);
+                        LoadPurchases(fileExt);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK);
+                        LoadPurchases("DBF");
+                    }
+                    break;
             }
         }
 
@@ -368,6 +390,8 @@ namespace Prints
             //lvwList.Items.Clear();
             //printListItemBindingSource.DataSource = null;
         }
+
+        #region Reports
 
         private void LoadInvoices(string fileExtension)
         {
@@ -728,6 +752,25 @@ namespace Prints
         private void LoadReceipts()
         {
         }
+
+        private void LoadPurchases(string fileExtension)
+        {
+            string fileName = $"INV_HDR.{fileExtension}";
+            using (var con = new OleDbConnection(YearConnectionString))
+            {
+                con.Open();
+                string query = "SELECT BILL_NO AS Number, BILL_DT AS Date, REF_NO AS RefNumber, " +
+                    "CODE AS PartyCode, NAME AS Party, CITY AS City, TOT_QTY AS TotalQty, " +
+                    "SUB_TOT AS Subtotal, NET_AMT AS NetAmount " +
+                    $"FROM {fileName} WHERE CAT IN('P','O') AND BILL_DT=CTOD('{dtpDate.Value:MM/dd/yyyy}') " +
+                    "ORDER BY BILL_NO";
+
+                var invoices = con.Query<PrintHeader>(query);
+                printListItemBindingSource.DataSource = invoices;
+            }
+        }
+
+        #endregion Reports
     }
 
     internal enum GstReport
